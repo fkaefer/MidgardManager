@@ -19,6 +19,7 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 
+import com.firebase.client.ChildEventListener;
 import com.firebase.client.DataSnapshot;
 import com.firebase.client.Firebase;
 import com.firebase.client.FirebaseError;
@@ -48,7 +49,7 @@ public class CharsListActivity extends Fragment {
     private boolean mTwoPane;
     private View mFrag;
     Firebase charsRef;
-    SimpleItemRecyclerViewAdapter mAdapter;
+    static SimpleItemRecyclerViewAdapter mAdapter;
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -68,7 +69,56 @@ public class CharsListActivity extends Fragment {
         assert recyclerView != null;
         setupRecyclerView((RecyclerView) recyclerView);
 
-        charsRef.addListenerForSingleValueEvent(new ValueEventListener() {
+        getCharsfromBattle("battle1");
+
+        /*
+        battleRef.addChildEventListener(new ChildEventListener() {
+            @Override
+            public void onChildAdded(DataSnapshot dataSnapshot, String s) {
+                String childKey = dataSnapshot.getKey();
+                charsRef.child(childKey).addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(DataSnapshot dataSnapshot) {
+                        Chars.CharItem newChar = dataSnapshot.getValue(Chars.CharItem.class);
+                        newChar.setTempGw(newChar.getGw());
+                        newChar.setId(dataSnapshot.getKey());
+                        if (!Chars.ITEM_MAP.containsKey(newChar.id)) {
+                            Chars.addItem(newChar);
+                            GwComperator comparator = new GwComperator();
+                            Collections.sort(Chars.ITEMS, comparator);
+                            mAdapter.notifyDataSetChanged();
+                        }
+                    }
+
+                    @Override
+                    public void onCancelled(FirebaseError firebaseError) {
+
+                    }
+                });
+            }
+
+            @Override
+            public void onChildChanged(DataSnapshot dataSnapshot, String s) {
+
+            }
+
+            @Override
+            public void onChildRemoved(DataSnapshot dataSnapshot) {
+
+            }
+
+            @Override
+            public void onChildMoved(DataSnapshot dataSnapshot, String s) {
+
+            }
+
+            @Override
+            public void onCancelled(FirebaseError firebaseError) {
+
+            }
+        });
+        */
+        /*charsRef.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot snapshot) {
                 for (DataSnapshot postSnapshot : snapshot.getChildren()) {
@@ -88,7 +138,7 @@ public class CharsListActivity extends Fragment {
             public void onCancelled(FirebaseError firebaseError) {
                 System.out.println("The read failed: " + firebaseError.getMessage());
             }
-        });
+        });*/
 
         if (getActivity().findViewById(R.id.chars_detail_container) != null) {
             // The detail container view will be present only in the
@@ -104,9 +154,51 @@ public class CharsListActivity extends Fragment {
 
     }
 
+    public void refreshData(){
+        CharsListActivity.GwComperator comparator = new CharsListActivity.GwComperator();
+        Collections.sort(Chars.ITEMS, comparator);
+        mAdapter.notifyDataSetChanged();
+    }
+
     private void setupRecyclerView(@NonNull RecyclerView recyclerView) {
         mAdapter = new SimpleItemRecyclerViewAdapter(Chars.ITEMS);
         recyclerView.setAdapter(mAdapter);
+    }
+
+    public void getCharsfromBattle(String battleKey){
+
+        Application.mainRef.child("battles/" + battleKey).addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                for (DataSnapshot postSnapshot : dataSnapshot.getChildren()) {
+                    String childKey = postSnapshot.getKey();
+                    charsRef.child(childKey).addValueEventListener(new ValueEventListener() {
+                        @Override
+                        public void onDataChange(DataSnapshot dataSnapshot) {
+                            Chars.CharItem newChar = dataSnapshot.getValue(Chars.CharItem.class);
+                            newChar.setTempGw(newChar.getGw());
+                            newChar.setId(dataSnapshot.getKey());
+                            Log.e("GetCharsFromBattle", newChar.id);
+                            if (!Chars.ITEM_MAP.containsKey(newChar.id)) {
+                                Chars.addItem(newChar);
+                                refreshData();
+                            }
+                        }
+
+                        @Override
+                        public void onCancelled(FirebaseError firebaseError) {
+
+                        }
+                    });
+                }
+
+            }
+
+            @Override
+            public void onCancelled(FirebaseError firebaseError) {
+
+            }
+        });
     }
 
     public class SimpleItemRecyclerViewAdapter
@@ -261,7 +353,7 @@ public class CharsListActivity extends Fragment {
         }
     }
 
-    public class GwComperator implements Comparator<Chars.CharItem> {
+    public static class GwComperator implements Comparator<Chars.CharItem> {
         @Override
         public int compare(Chars.CharItem lhs, Chars.CharItem rhs) {
             return lhs.getTempGw()> rhs.getTempGw() ? -1 : (lhs.getTempGw()< rhs.getTempGw() ? 1 : 0);

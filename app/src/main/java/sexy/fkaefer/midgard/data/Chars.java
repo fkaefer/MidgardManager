@@ -58,6 +58,26 @@ public class Chars {
         public int pA;
         public int tempGw;
 
+        public int getGG() {
+            return GG;
+        }
+
+        public void setGG(int GG) {
+            this.GG = GG;
+        }
+
+        public int GG;
+
+        public int getSG() {
+            return SG;
+        }
+
+        public void setSG(int SG) {
+            this.SG = SG;
+        }
+
+        public int SG;
+
         public CharItem(){
         }
 
